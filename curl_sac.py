@@ -396,6 +396,7 @@ class RadSacAgent(object):
             obs, action, detach_encoder=self.detach_encoder)
         critic_loss = F.mse_loss(current_Q1,
                                  target_Q) + F.mse_loss(current_Q2, target_Q)
+
         if step % self.log_interval == 0:
             L.log('train_critic/loss', critic_loss, step)
 
@@ -406,6 +407,7 @@ class RadSacAgent(object):
         self.critic_optimizer.step()
 
         self.critic.log(L, step)
+        return abs(current_Q1-target_Q)
 
     def update_actor_and_alpha(self, obs, L, step):
         # detach encoder, so we don't update it with the actor loss
@@ -467,14 +469,15 @@ class RadSacAgent(object):
 
     def update(self, replay_buffer, L, step):
         if self.encoder_type == 'pixel':
-            obs, action, reward, next_obs, not_done = replay_buffer.sample_rad(self.augs_funcs)
+            obs, action, reward, next_obs, not_done, idxs = replay_buffer.sample_rad(self.augs_funcs)
         else:
             obs, action, reward, next_obs, not_done = replay_buffer.sample_proprio()
-    
+
         if step % self.log_interval == 0:
             L.log('train/batch_reward', reward.mean(), step)
 
-        self.update_critic(obs, action, reward, next_obs, not_done, L, step)
+        priorities = self.update_critic(obs, action, reward, next_obs, not_done, L, step)
+        replay_buffer.update_priorities(idxs, priorities)
 
         if step % self.actor_update_freq == 0:
             self.update_actor_and_alpha(obs, L, step)

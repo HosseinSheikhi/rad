@@ -1,4 +1,4 @@
-name: rad
+name: rad_v3
 channels:
   - defaults
 dependencies:

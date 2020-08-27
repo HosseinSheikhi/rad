@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--batch_size', default=32, type=int)
     parser.add_argument('--hidden_dim', default=1024, type=int)
     # eval
-    parser.add_argument('--eval_freq', default=1000, type=int)
+    parser.add_argument('--eval_freq', default=10000, type=int)
     parser.add_argument('--num_eval_episodes', default=10, type=int)
     # critic
     parser.add_argument('--critic_lr', default=1e-3, type=float)
@@ -66,10 +66,10 @@ def parse_args():
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     # misc
     parser.add_argument('--seed', default=1, type=int)
-    parser.add_argument('--work_dir', default='.', type=str)
+    parser.add_argument('--work_dir', default='work_dir', type=str)
     parser.add_argument('--save_tb', default=False, action='store_true')
     parser.add_argument('--save_buffer', default=False, action='store_true')
-    parser.add_argument('--save_video', default=False, action='store_true')
+    parser.add_argument('--save_video', default=True, action='store_true')
     parser.add_argument('--save_model', default=False, action='store_true')
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     # data augs
