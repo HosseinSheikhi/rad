@@ -6,17 +6,29 @@ from TransformLayer import ColorJitterLayer
 from sklearn import preprocessing
 
 
-def random_crop(imgs, out=84):
+def random_crop(imgs, priority, out=84):
     """
         args:
         imgs: np.array shape (B,C,H,W)
         out: output size (e.g. 84)
         returns np.array
     """
+    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
+    max_p = np.max(p)
+    thr = 0.1
+    thr_ctr = 0
     n, c, h, w = imgs.shape
     crop_max = h - out + 1
     w1 = np.random.randint(0, crop_max, n)
     h1 = np.random.randint(0, crop_max, n)
+    if max_p != 0:  # in first two steps max=0
+        p = np.squeeze(p)
+        for i in range(n):
+            if p[i] > thr:
+                w1[i] = 0
+                h1[i] = 0
+                thr_ctr += 1
+        print(thr_ctr)
     cropped = np.empty((n, c, out, out), dtype=imgs.dtype)
     for i, (img, w11, h11) in enumerate(zip(imgs, w1, h1)):
         cropped[i] = img[:, h11:h11 + out, w11:w11 + out]
