@@ -195,11 +195,11 @@ class ReplayBuffer(Dataset):
         """
         show augmented images
         """
-        image = obses.cpu().numpy()
-        image = image[0][0:3, :, :]
-        image = np.moveaxis(image, 0, -1)
-        cv2.imshow("test", image)
-        cv2.waitKey(1)
+        # image = obses.cpu().numpy()
+        # image = image[0][0:3, :, :]
+        # image = np.moveaxis(image, 0, -1)
+        # cv2.imshow("test", image)
+        # cv2.waitKey(1)
         return obses, actions, rewards, next_obses, not_dones, idxs
 
     def save(self, save_dir):
