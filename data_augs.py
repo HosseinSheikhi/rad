@@ -91,28 +91,46 @@ def random_cutout(imgs, min_cut=10, max_cut=30):
     return cutouts
 
 
-def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
-    """
-        args:
-        imgs: shape (B,C,H,W)
-        out: output size (e.g. 84)
-    """
-    """
-        in original code min_cut=10, max_cut=30, we want to cutout
-    """
-    p = preprocessing.scale(np.squeeze(priority))
+"""
+p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
     max_p = np.max([np.max(p), abs(np.min(p))])
+    print(np.max(p), np.min(p))
     n, c, h, w = imgs.shape
     if max_p != 0:
         p = 10 / max_p * p
+        p = np.squeeze(p)
         p = p.astype(int)
         w1 = np.random.randint(min_cut, max_cut, n) - np.array(p, dtype=int)
         h1 = np.random.randint(min_cut, max_cut, n) - np.array(p, dtype=int)
     else:
         w1 = np.random.randint(min_cut, max_cut, n)
         h1 = np.random.randint(min_cut, max_cut, n)
+"""
 
-    print(np.var(w1),np.var(h1))
+
+def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
+    """
+        args:
+        imgs: shape (B,C,H,W)
+        out: output size (e.g. 84)
+    """
+
+    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
+    max_p = np.max(p)
+    thr = 0.1
+    thr_ctr = 0
+    n, c, h, w = imgs.shape
+    w1 = np.random.randint(min_cut, max_cut, n)
+    h1 = np.random.randint(min_cut, max_cut, n)
+    if max_p != 0:  # in first two steps max=0
+        p = np.squeeze(p)
+        for i in range(n):
+            if p[i] > thr:
+                w1[i] = 0
+                h1[i] = 0
+                thr_ctr += 1
+        print(thr_ctr)
+
     cutouts = np.empty((n, c, h, w), dtype=imgs.dtype)
     rand_box = np.random.randint(0, 255, size=(n, c)) / 255.
     for i, (img, w11, h11) in enumerate(zip(imgs, w1, h1)):
