@@ -407,7 +407,7 @@ class RadSacAgent(object):
         self.critic_optimizer.step()
 
         self.critic.log(L, step)
-        return abs(current_Q1-target_Q)
+        return torch.exp(current_Q1-target_Q) + torch.exp(current_Q2 - target_Q)
 
     def update_actor_and_alpha(self, obs, L, step):
         # detach encoder, so we don't update it with the actor loss
