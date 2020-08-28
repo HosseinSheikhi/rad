@@ -26,16 +26,16 @@ def pars_json(address):
 
 episode1, episode_reward1 = pars_json('log/original/cutout_color1/train.json')
 episode2, episode_reward2 = pars_json('log/original/cutout_color2/train.json')
-episode_p2, episode_reward_p2 = pars_json('log/prioritized/cutout_color2/train.json')
-episode_p3, episode_reward_p3 = pars_json('log/prioritized/cutout_color3/train.json')
+episode_p1, episode_reward_p1 = pars_json('log/prioritized/second_criteria/cutout_color1/train.json')
 
 episode_crop, episode_reward_crop = pars_json('log/original/crop/train.json')
+episode_crop_p1, episode_reward_crop_p1 = pars_json('log/prioritized/second_criteria/crop1/train.json')
 fig = plt.figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-plt.plot(episode1, episode_reward1)
-plt.plot(episode2, episode_reward2)
-plt.plot(episode_p2, episode_reward_p2)
-plt.plot(episode_p3, episode_reward_p3)
+#plt.plot(episode1, episode_reward1)
+#plt.plot(episode2, episode_reward2)
+#plt.plot(episode_p1, episode_reward_p1)
 plt.plot(episode_crop, episode_reward_crop)
+plt.plot(episode_crop_p1, episode_reward_crop_p1)
 
 
 fig.show()
