@@ -19,23 +19,35 @@ def pars_json(address):
         batch_reward.append(item['batch_reward'])
         critic_loss.append(item['critic_loss'])
         actor_loss.append(item['actor_loss'])
-        step.append(item['actor_loss'])
+        step.append(item['step'])
 
-    return episode, episode_reward
-
-
-episode1, episode_reward1 = pars_json('log/original/cutout_color1/train.json')
-episode2, episode_reward2 = pars_json('log/original/cutout_color2/train.json')
-episode_p1, episode_reward_p1 = pars_json('log/prioritized/second_criteria/cutout_color1/train.json')
-
-episode_crop, episode_reward_crop = pars_json('log/original/crop/train.json')
-episode_crop_p1, episode_reward_crop_p1 = pars_json('log/prioritized/second_criteria/crop1/train.json')
-fig = plt.figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k')
-#plt.plot(episode1, episode_reward1)
-#plt.plot(episode2, episode_reward2)
-#plt.plot(episode_p1, episode_reward_p1)
-plt.plot(episode_crop, episode_reward_crop)
-plt.plot(episode_crop_p1, episode_reward_crop_p1)
+    return step, episode_reward
 
 
+fig = plt.figure(num=None, figsize=(16, 12), dpi=80, facecolor='w', edgecolor='k')
+plt.savefig
+# step_original, episode_reward_original = pars_json('log/original/cheetah_run/cutout_color1/train.json')
+# step_ch, episode_reward_ch = pars_json('log/prioritized/cheetah_run/cutout_color1/train.json')
+# plt.plot(step_original, episode_reward_original, label='original')
+# plt.plot(step_ch, episode_reward_ch, label='priority')
+
+# step_original, episode_reward_original = pars_json('log/original/cartpole_swing/cutout_color1/train.json')
+# step_original2, episode_reward_original2 = pars_json('log/original/cartpole_swing/cutout_color2/train.json')
+# step_p1, episode_reward_p1 = pars_json('log/prioritized/cartpole_swing/final_criteria/cutout_color1/train.json')
+# step_p2, episode_reward_p2 = pars_json('log/prioritized/cartpole_swing/final_criteria/cutout_color2/train.json')
+# plt.plot(step_original, episode_reward_original, label='original1')
+# plt.plot(step_original2, episode_reward_original2, label='original2')
+# plt.plot(step_p1, episode_reward_p1, label='prioritized1')
+# plt.plot(step_p2, episode_reward_p2, label='prioritized2')
+
+step_original, episode_reward_original = pars_json('log/original/cartpole_swing/crop/train.json')
+step_p1, episode_reward_p1 = pars_json('log/prioritized/cartpole_swing/final_criteria/crop2_s22/train.json')
+plt.plot(step_original, episode_reward_original, label='original1')
+plt.plot(step_p1, episode_reward_p1, label='prioritized1')
+
+plt.title("cartpole swing")
+plt.xlabel('step')
+plt.ylabel('reward')
+plt.legend(loc="upper left")
+plt.savefig('/home/hossein/Desktop/plt3.png')
 fig.show()

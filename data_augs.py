@@ -51,7 +51,7 @@ def grayscale(imgs):
     return imgs
 
 
-def random_grayscale(images, p=.3):
+def random_grayscale(images, priority):
     """
         args:
         imgs: torch.tensor shape (B,C,H,W)
@@ -66,8 +66,9 @@ def random_grayscale(images, p=.3):
     bs, channels, h, w = images.shape
     images = images.to(device)
     gray_images = grayscale(images)
-    rnd = np.random.uniform(0., 1., size=(images.shape[0],))
-    mask = rnd <= p
+    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
+    thr = 0.0
+    mask = thr <= np.squeeze(p)
     mask = torch.from_numpy(mask)
     frames = images.shape[1] // 3
     images = images.view(*gray_images.shape)
@@ -82,18 +83,28 @@ def random_grayscale(images, p=.3):
 # random cutout
 # TODO: should mask this 
 
-def random_cutout(imgs, min_cut=10, max_cut=30):
+def random_cutout(imgs, priority, min_cut=10, max_cut=30):
     """
         args:
         imgs: np.array shape (B,C,H,W)
         min / max cut: int, min / max size of cutout 
         returns np.array
     """
-
+    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
+    max_p = np.max(p)
+    thr = 0.1
+    thr_ctr = 0
     n, c, h, w = imgs.shape
     w1 = np.random.randint(min_cut, max_cut, n)
     h1 = np.random.randint(min_cut, max_cut, n)
-
+    if max_p != 0:  # in first two steps max=0
+        p = np.squeeze(p)
+        for i in range(n):
+            if p[i] > thr:
+                w1[i] = 0
+                h1[i] = 0
+                thr_ctr += 1
+        print(thr_ctr)
     cutouts = np.empty((n, c, h, w), dtype=imgs.dtype)
     for i, (img, w11, h11) in enumerate(zip(imgs, w1, h1)):
         cut_img = img.copy()
@@ -101,23 +112,6 @@ def random_cutout(imgs, min_cut=10, max_cut=30):
         # print(img[:, h11:h11 + h11, w11:w11 + w11].shape)
         cutouts[i] = cut_img
     return cutouts
-
-
-"""
-p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
-    max_p = np.max([np.max(p), abs(np.min(p))])
-    print(np.max(p), np.min(p))
-    n, c, h, w = imgs.shape
-    if max_p != 0:
-        p = 10 / max_p * p
-        p = np.squeeze(p)
-        p = p.astype(int)
-        w1 = np.random.randint(min_cut, max_cut, n) - np.array(p, dtype=int)
-        h1 = np.random.randint(min_cut, max_cut, n) - np.array(p, dtype=int)
-    else:
-        w1 = np.random.randint(min_cut, max_cut, n)
-        h1 = np.random.randint(min_cut, max_cut, n)
-"""
 
 
 def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
@@ -158,8 +152,7 @@ def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
 
 
 # random flip
-
-def random_flip(images, p=.2):
+def random_flip(images, priority):
     """
         args:
         imgs: torch.tensor shape (B,C,H,W)
@@ -174,9 +167,9 @@ def random_flip(images, p=.2):
     images = images.to(device)
 
     flipped_images = images.flip([3])
-
-    rnd = np.random.uniform(0., 1., size=(images.shape[0],))
-    mask = rnd <= p
+    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
+    thr = 0.0
+    mask = thr <= np.squeeze(p)
     mask = torch.from_numpy(mask)
     frames = images.shape[1]  # // 3
     images = images.view(*flipped_images.shape)
@@ -192,8 +185,7 @@ def random_flip(images, p=.2):
 
 
 # random rotation
-
-def random_rotation(images, p=.3):
+def random_rotation(images, priority):
     """
         args:
         imgs: torch.tensor shape (B,C,H,W)
@@ -211,9 +203,10 @@ def random_rotation(images, p=.3):
     rot180_images = images.rot90(2, [2, 3])
     rot270_images = images.rot90(3, [2, 3])
 
-    rnd = np.random.uniform(0., 1., size=(images.shape[0],))
     rnd_rot = np.random.randint(1, 4, size=(images.shape[0],))
-    mask = rnd <= p
+    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
+    thr = 0.0
+    mask = thr <= np.squeeze(p)
     mask = rnd_rot * mask
     mask = torch.from_numpy(mask).to(device)
 
@@ -236,9 +229,9 @@ def random_rotation(images, p=.3):
 
 def random_convolution(imgs):
     '''
-    random covolution in "network randomization"
+    random convolution in "network randomization"
     
-    (imbs): B x (C x stack) x H x W, note: imgs should be normalized and torch tensor
+    (imgs): B x (C x stack) x H x W, note: imgs should be normalized and torch tensor
     '''
     _device = imgs.device
 
@@ -279,6 +272,31 @@ def random_color_jitter(imgs):
 
     imgs = transform_module(imgs).view(b, c, h, w)
     return imgs
+
+
+# test time aug
+def center_translate(imgs, size):
+    n, c, h, w = imgs.shape
+    assert size >= h and size >= w
+    outs = np.zeros((n, c, size, size), dtype=imgs.dtype)
+    h1 = (size - h) // 2
+    w1 = (size - w) // 2
+    outs[:, :, h1:h1 + h, w1:w1 + w] = imgs
+    return outs
+
+
+# train time aug
+def random_translate(imgs, size, return_random_idxs=False, h1s=None, w1s=None):
+    n, c, h, w = imgs.shape
+    assert size >= h and size >= w
+    outs = np.zeros((n, c, size, size), dtype=imgs.dtype)
+    h1s = np.random.randint(0, size - h + 1, n) if h1s is None else h1s
+    w1s = np.random.randint(0, size - w + 1, n) if w1s is None else w1s
+    for out, img, h1, w1 in zip(outs, imgs, h1s, w1s):
+        out[:, h1:h1 + h, w1:w1 + w] = img
+    if return_random_idxs:  # So can do the same to another set of imgs.
+        return outs, dict(h1s=h1s, w1s=w1s)
+    return outs
 
 
 def no_aug(x):

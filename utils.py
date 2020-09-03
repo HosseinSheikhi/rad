@@ -10,6 +10,7 @@ import time
 from skimage.util.shape import view_as_windows
 import cv2
 
+
 class eval_mode(object):
     def __init__(self, *models):
         self.models = models
@@ -151,7 +152,7 @@ class ReplayBuffer(Dataset):
         return obses, actions, rewards, next_obses, not_dones, cpc_kwargs
 
     def update_priorities(self, idxs, priorities):
-        priorities=priorities.detach().cpu().numpy()
+        priorities = priorities.detach().cpu().numpy()
         for i, var in enumerate(idxs):
             self.priorities[var] = priorities[i]
 
@@ -167,13 +168,13 @@ class ReplayBuffer(Dataset):
 
         obses = self.obses[idxs]
         next_obses = self.next_obses[idxs]
-        p = self.priorities[idxs]
+        priority = self.priorities[idxs]
         if aug_funcs:
             for aug, func in aug_funcs.items():
                 # apply crop and cutout first
                 if 'crop' in aug or 'cutout' in aug:
-                    obses = func(obses,abs(p))
-                    next_obses = func(next_obses,abs(p))
+                    obses = func(obses, priority)
+                    next_obses = func(next_obses, priority)
 
         obses = torch.as_tensor(obses, device=self.device).float()
         next_obses = torch.as_tensor(next_obses, device=self.device).float()
@@ -190,16 +191,16 @@ class ReplayBuffer(Dataset):
                 # skip crop and cutout augs
                 if 'crop' in aug or 'cutout' in aug:
                     continue
-                obses = func(obses)
-                next_obses = func(next_obses)
+                obses = func(obses, priority)
+                next_obses = func(next_obses, priority)
         """
         show augmented images
         """
-        # image = obses.cpu().numpy()
-        # image = image[0][0:3, :, :]
-        # image = np.moveaxis(image, 0, -1)
-        # cv2.imshow("test", image)
-        # cv2.waitKey(1)
+        image = obses.cpu().numpy()
+        image = image[0][0:3, :, :]
+        image = np.moveaxis(image, 0, -1)
+        cv2.imshow("test", image)
+        cv2.waitKey(1)
         return obses, actions, rewards, next_obses, not_dones, idxs
 
     def save(self, save_dir):
