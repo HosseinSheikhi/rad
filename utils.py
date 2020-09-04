@@ -99,7 +99,7 @@ class ReplayBuffer(Dataset):
         np.copyto(self.rewards[self.idx], reward)
         np.copyto(self.next_obses[self.idx], next_obs)
         np.copyto(self.not_dones[self.idx], not done)
-        np.copyto(self.priorities[self.idx], -1)  # -1 means default priority (must consider high or low?)
+        np.copyto(self.priorities[self.idx], 10)  # (at the beginning we should not do augmentation so set a priority more than 1)
 
         self.idx = (self.idx + 1) % self.capacity
         self.full = self.full or self.idx == 0
@@ -156,7 +156,7 @@ class ReplayBuffer(Dataset):
         for i, var in enumerate(idxs):
             self.priorities[var] = priorities[i]
 
-    def sample_rad(self, aug_funcs):
+    def sample_rad(self, aug_funcs, writer, step):
 
         # augs specified as flags
         # curl_sac organizes flags into aug funcs
@@ -173,8 +173,8 @@ class ReplayBuffer(Dataset):
             for aug, func in aug_funcs.items():
                 # apply crop and cutout first
                 if 'crop' in aug or 'cutout' in aug:
-                    obses = func(obses, priority)
-                    next_obses = func(next_obses, priority)
+                    obses, not_augmented_obses = func(obses, priority)
+                    next_obses, _ = func(next_obses, priority)
 
         obses = torch.as_tensor(obses, device=self.device).float()
         next_obses = torch.as_tensor(next_obses, device=self.device).float()
@@ -191,16 +191,18 @@ class ReplayBuffer(Dataset):
                 # skip crop and cutout augs
                 if 'crop' in aug or 'cutout' in aug:
                     continue
-                obses = func(obses, priority)
-                next_obses = func(next_obses, priority)
+                obses,not_augmented_obses = func(obses, priority)
+                next_obses,_ = func(next_obses, priority)
+
+        writer.add_scalar("augmented_obses",self.batch_size-not_augmented_obses, step)
         """
         show augmented images
         """
-        image = obses.cpu().numpy()
-        image = image[0][0:3, :, :]
-        image = np.moveaxis(image, 0, -1)
-        cv2.imshow("test", image)
-        cv2.waitKey(1)
+        # image = obses.cpu().numpy()
+        # image = image[0][0:3, :, :]
+        # image = np.moveaxis(image, 0, -1)
+        # cv2.imshow("test", image)
+        # cv2.waitKey(1)
         return obses, actions, rewards, next_obses, not_dones, idxs
 
     def save(self, save_dir):

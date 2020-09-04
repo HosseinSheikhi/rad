@@ -13,22 +13,22 @@ def random_crop(imgs, priority, out=84):
         out: output size (e.g. 84)
         returns np.array
     """
-    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
-    thr_ctr = 0
+    clip_max=2.0
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=clip_max)
+    not_augmented_ctr = 0
     n, c, h, w = imgs.shape
     crop_max = h - out + 1
     w1 = np.random.randint(0, crop_max, n)
     h1 = np.random.randint(0, crop_max, n)
     for i in range(n):
-        if p[i] == 1.0:
+        if p[i] == clip_max:
             w1[i] = 0
             h1[i] = 0
-            thr_ctr += 1
-    print(thr_ctr)
+            not_augmented_ctr += 1
     cropped = np.empty((n, c, out, out), dtype=imgs.dtype)
     for i, (img, w11, h11) in enumerate(zip(imgs, w1, h1)):
         cropped[i] = img[:, h11:h11 + out, w11:w11 + out]
-    return cropped
+    return cropped, not_augmented_ctr
 
 
 def grayscale(imgs):
@@ -85,24 +85,24 @@ def random_cutout(imgs, priority, min_cut=10, max_cut=30):
         min / max cut: int, min / max size of cutout 
         returns np.array
     """
-    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
-    thr_ctr = 0
+    clip_max=2.0
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=clip_max)
+    not_augmented_ctr = 0
     n, c, h, w = imgs.shape
     w1 = np.random.randint(min_cut, max_cut, n)
     h1 = np.random.randint(min_cut, max_cut, n)
     for i in range(n):
-        if p[i] == 1.0:
+        if p[i] == clip_max:
             w1[i] = 0
             h1[i] = 0
-            thr_ctr += 1
-    print(thr_ctr)
+            not_augmented_ctr += 1
     cutouts = np.empty((n, c, h, w), dtype=imgs.dtype)
     for i, (img, w11, h11) in enumerate(zip(imgs, w1, h1)):
         cut_img = img.copy()
         cut_img[:, h11:h11 + h11, w11:w11 + w11] = 0
         # print(img[:, h11:h11 + h11, w11:w11 + w11].shape)
         cutouts[i] = cut_img
-    return cutouts
+    return cutouts, not_augmented_ctr
 
 
 def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
@@ -111,18 +111,17 @@ def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
         imgs: shape (B,C,H,W)
         out: output size (e.g. 84)
     """
-
-    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
-    thr_ctr = 0
+    clip_max = 2.0
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=clip_max)
+    not_augmented_ctr = 0
     n, c, h, w = imgs.shape
     w1 = np.random.randint(min_cut, max_cut, n)
     h1 = np.random.randint(min_cut, max_cut, n)
     for i in range(n):
-        if p[i] == 1.0:
+        if p[i] == clip_max:
             w1[i] = 0
             h1[i] = 0
-            thr_ctr += 1
-    print(thr_ctr)
+            not_augmented_ctr += 1
 
     cutouts = np.empty((n, c, h, w), dtype=imgs.dtype)
     rand_box = np.random.randint(0, 255, size=(n, c)) / 255.
@@ -135,7 +134,7 @@ def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
             (1,) + cut_img[:, h11:h11 + h11, w11:w11 + w11].shape[1:])
 
         cutouts[i] = cut_img
-    return cutouts
+    return cutouts, not_augmented_ctr
 
 
 # random flip
@@ -284,8 +283,8 @@ def random_translate(imgs, size, return_random_idxs=False, h1s=None, w1s=None):
     return outs
 
 
-def no_aug(x):
-    return x
+def no_aug(x, priority):
+    return x, 0
 
 
 if __name__ == '__main__':

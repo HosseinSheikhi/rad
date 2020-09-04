@@ -388,7 +388,7 @@ class RadSacAgent(object):
             mu, pi, _, _ = self.actor(obs, compute_log_pi=False)
             return pi.cpu().data.numpy().flatten()
 
-    def update_critic(self, obs, action, reward, next_obs, not_done, L, step):
+    def update_critic(self, obs, action, reward, next_obs, not_done, L, writer, step):
         with torch.no_grad():
             _, policy_action, log_pi, _ = self.actor(next_obs)
             target_Q1, target_Q2 = self.critic_target(next_obs, policy_action)
@@ -402,6 +402,7 @@ class RadSacAgent(object):
         critic_loss = F.mse_loss(current_Q1,
                                  target_Q) + F.mse_loss(current_Q2, target_Q)
 
+        writer.add_scalar("critic_loss", critic_loss, step)
         if step % self.log_interval == 0:
             L.log('train_critic/loss', critic_loss, step)
 
@@ -470,16 +471,17 @@ class RadSacAgent(object):
         if step % self.log_interval == 0:
             L.log('train/curl_loss', loss, step)
 
-    def update(self, replay_buffer, L, step):
+    def update(self, replay_buffer, L, writer, step):
         if self.encoder_type == 'pixel':
-            obs, action, reward, next_obs, not_done, idxs = replay_buffer.sample_rad(self.augs_funcs)
+            obs, action, reward, next_obs, not_done, idxs = replay_buffer.sample_rad(self.augs_funcs, writer, step)
         else:
             obs, action, reward, next_obs, not_done = replay_buffer.sample_proprio()
 
+        writer.add_scalar("batch_reward", reward.mean(), step)
         if step % self.log_interval == 0:
             L.log('train/batch_reward', reward.mean(), step)
 
-        priorities = self.update_critic(obs, action, reward, next_obs, not_done, L, step)
+        priorities = self.update_critic(obs, action, reward, next_obs, not_done, L, writer, step)
         replay_buffer.update_priorities(idxs, priorities)
 
         if step % self.actor_update_freq == 0:
