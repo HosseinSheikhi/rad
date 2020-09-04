@@ -13,22 +13,18 @@ def random_crop(imgs, priority, out=84):
         out: output size (e.g. 84)
         returns np.array
     """
-    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
-    max_p = np.max(p)
-    thr = 0.1
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
     thr_ctr = 0
     n, c, h, w = imgs.shape
     crop_max = h - out + 1
     w1 = np.random.randint(0, crop_max, n)
     h1 = np.random.randint(0, crop_max, n)
-    if max_p != 0:  # in first two steps max=0
-        p = np.squeeze(p)
-        for i in range(n):
-            if p[i] > thr:
-                w1[i] = 0
-                h1[i] = 0
-                thr_ctr += 1
-        print(thr_ctr)
+    for i in range(n):
+        if p[i] == 1.0:
+            w1[i] = 0
+            h1[i] = 0
+            thr_ctr += 1
+    print(thr_ctr)
     cropped = np.empty((n, c, out, out), dtype=imgs.dtype)
     for i, (img, w11, h11) in enumerate(zip(imgs, w1, h1)):
         cropped[i] = img[:, h11:h11 + out, w11:w11 + out]
@@ -66,9 +62,8 @@ def random_grayscale(images, priority):
     bs, channels, h, w = images.shape
     images = images.to(device)
     gray_images = grayscale(images)
-    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
-    thr = 0.0
-    mask = thr <= np.squeeze(p)
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
+    mask = ~(1 == np.squeeze(p))
     mask = torch.from_numpy(mask)
     frames = images.shape[1] // 3
     images = images.view(*gray_images.shape)
@@ -90,21 +85,17 @@ def random_cutout(imgs, priority, min_cut=10, max_cut=30):
         min / max cut: int, min / max size of cutout 
         returns np.array
     """
-    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
-    max_p = np.max(p)
-    thr = 0.1
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
     thr_ctr = 0
     n, c, h, w = imgs.shape
     w1 = np.random.randint(min_cut, max_cut, n)
     h1 = np.random.randint(min_cut, max_cut, n)
-    if max_p != 0:  # in first two steps max=0
-        p = np.squeeze(p)
-        for i in range(n):
-            if p[i] > thr:
-                w1[i] = 0
-                h1[i] = 0
-                thr_ctr += 1
-        print(thr_ctr)
+    for i in range(n):
+        if p[i] == 1.0:
+            w1[i] = 0
+            h1[i] = 0
+            thr_ctr += 1
+    print(thr_ctr)
     cutouts = np.empty((n, c, h, w), dtype=imgs.dtype)
     for i, (img, w11, h11) in enumerate(zip(imgs, w1, h1)):
         cut_img = img.copy()
@@ -121,21 +112,17 @@ def random_cutout_color(imgs, priority, min_cut=10, max_cut=30):
         out: output size (e.g. 84)
     """
 
-    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
-    max_p = np.max(p)
-    thr = 0.1
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
     thr_ctr = 0
     n, c, h, w = imgs.shape
     w1 = np.random.randint(min_cut, max_cut, n)
     h1 = np.random.randint(min_cut, max_cut, n)
-    if max_p != 0:  # in first two steps max=0
-        p = np.squeeze(p)
-        for i in range(n):
-            if p[i] > thr:
-                w1[i] = 0
-                h1[i] = 0
-                thr_ctr += 1
-        print(thr_ctr)
+    for i in range(n):
+        if p[i] == 1.0:
+            w1[i] = 0
+            h1[i] = 0
+            thr_ctr += 1
+    print(thr_ctr)
 
     cutouts = np.empty((n, c, h, w), dtype=imgs.dtype)
     rand_box = np.random.randint(0, 255, size=(n, c)) / 255.
@@ -167,9 +154,8 @@ def random_flip(images, priority):
     images = images.to(device)
 
     flipped_images = images.flip([3])
-    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
-    thr = 0.0
-    mask = thr <= np.squeeze(p)
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
+    mask = ~(1 == np.squeeze(p))
     mask = torch.from_numpy(mask)
     frames = images.shape[1]  # // 3
     images = images.view(*flipped_images.shape)
@@ -204,9 +190,8 @@ def random_rotation(images, priority):
     rot270_images = images.rot90(3, [2, 3])
 
     rnd_rot = np.random.randint(1, 4, size=(images.shape[0],))
-    p = (priority - np.mean(priority)) / (np.std(priority) + 0.000001)
-    thr = 0.0
-    mask = thr <= np.squeeze(p)
+    p = np.clip(np.squeeze(priority), a_min=0.0, a_max=1.0)
+    mask = ~(1 == np.squeeze(p))
     mask = rnd_rot * mask
     mask = torch.from_numpy(mask).to(device)
 
